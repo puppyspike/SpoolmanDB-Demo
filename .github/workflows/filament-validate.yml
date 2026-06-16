@@ -1,0 +1,75 @@
+name: Filament-Issue validieren
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  validate:
+    # Nur Issues, die über das Filament-Formular erstellt wurden
+    if: contains(github.event.issue.labels.*.name, 'filament-submission')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install -r scripts/requirements.txt
+
+      - name: Issue-Formular parsen
+        id: parse
+        uses: stefanbuck/github-issue-parser@v3
+        with:
+          template-path: .github/ISSUE_TEMPLATE/filament.yml
+
+      - name: Geparste Daten in Datei schreiben
+        env:
+          ISSUE_JSON: ${{ steps.parse.outputs.jsonString }}
+        run: printf '%s' "$ISSUE_JSON" > issue.json
+
+      - name: Validieren (dry-run)
+        id: validate
+        run: |
+          set +e
+          python scripts/issue_to_filament.py issue.json --dry-run > result.txt 2>&1
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+          cat result.txt
+
+      - name: Ergebnis als Kommentar + Labels setzen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number }}
+          RC: ${{ steps.validate.outputs.rc }}
+        run: |
+          if [ "$RC" = "0" ]; then
+            gh issue edit "$NUM" --add-label "validated" --remove-label "invalid" || true
+            {
+              echo "✅ **Validierung erfolgreich.** Die Daten entsprechen dem Schema."
+              echo ""
+              echo "Ein Maintainer kann den Eintrag mit dem Label \`approved\` übernehmen."
+              echo ""
+              echo '<details><summary>Vorschau</summary>'
+              echo ""
+              echo '```'
+              cat result.txt
+              echo '```'
+              echo '</details>'
+            } > comment.md
+          else
+            gh issue edit "$NUM" --add-label "invalid" --remove-label "validated" || true
+            {
+              echo "❌ **Validierung fehlgeschlagen.** Bitte das Formular korrigieren (Issue bearbeiten):"
+              echo ""
+              echo '```'
+              cat result.txt
+              echo '```'
+            } > comment.md
+          fi
+          gh issue comment "$NUM" --body-file comment.md

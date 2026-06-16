@@ -1,0 +1,157 @@
+name: Filament hinzufügen
+description: Neues Filament für die SpoolmanDB erfassen. Pflichtfelder sind markiert.
+title: "[Filament]: "
+labels: ["filament-submission", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Beitrag! Fülle die Felder aus – nach dem Absenden prüft ein
+        Bot die Daten automatisch gegen das Datenbank-Schema und kommentiert das Ergebnis.
+        Erst wenn ein Maintainer das Label **approved** vergibt, wird der Eintrag übernommen.
+
+  - type: input
+    id: manufacturer
+    attributes:
+      label: Hersteller
+      description: Markenname. Existiert die Hersteller-Datei schon, wird der Eintrag dort ergänzt.
+      placeholder: z. B. Prusament
+    validations:
+      required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Produktname
+      description: "Muss den Platzhalter `{color_name}` enthalten – der Farbname wird automatisch eingesetzt."
+      value: "{color_name}"
+    validations:
+      required: true
+
+  - type: input
+    id: material
+    attributes:
+      label: Material
+      description: "Großbuchstaben/Zahlen, z. B. PLA, PETG, ABS, PC+ABS, PLA-CF, ABS-GF10."
+      placeholder: PLA
+    validations:
+      required: true
+
+  - type: input
+    id: density
+    attributes:
+      label: Dichte (g/cm³)
+      placeholder: "1.24"
+    validations:
+      required: true
+
+  - type: input
+    id: diameters
+    attributes:
+      label: Durchmesser (mm)
+      description: Mehrere mit Komma trennen.
+      placeholder: "1.75, 2.85"
+    validations:
+      required: true
+
+  - type: textarea
+    id: weights
+    attributes:
+      label: Gewichte
+      description: |
+        Eine Zeile pro Variante im Format `Gewicht, Spulengewicht, Spulentyp`.
+        Spulengewicht und Spulentyp (plastic / cardboard / metal) sind optional.
+      placeholder: |
+        1000, 196, plastic
+        2000, 220, plastic
+    validations:
+      required: true
+
+  - type: textarea
+    id: colors
+    attributes:
+      label: Farben
+      description: |
+        Eine Zeile pro Farbe im Format `Name, Hexcode`.
+        Mehrfarbig: mehrere Hexcodes mit Leerzeichen, z. B. `Rainbow, FF0000 00FF00 0000FF`.
+        Das `#` ist optional, Alpha-Kanal (8 Stellen) erlaubt.
+      placeholder: |
+        Galaxy Black, 1A1A1A
+        Lipstick Red, C0392B
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "### Optionale Angaben"
+
+  - type: input
+    id: extruder_temp
+    attributes:
+      label: Düsentemperatur (°C)
+      placeholder: "215"
+
+  - type: input
+    id: extruder_temp_range
+    attributes:
+      label: Düsentemperatur-Bereich (°C)
+      description: Zwei Werte, z. B. `205, 225`.
+      placeholder: "205, 225"
+
+  - type: input
+    id: bed_temp
+    attributes:
+      label: Betttemperatur (°C)
+      placeholder: "60"
+
+  - type: input
+    id: bed_temp_range
+    attributes:
+      label: Betttemperatur-Bereich (°C)
+      placeholder: "55, 65"
+
+  - type: dropdown
+    id: finish
+    attributes:
+      label: Oberfläche (finish)
+      options:
+        - (nicht angegeben)
+        - matte
+        - glossy
+
+  - type: dropdown
+    id: pattern
+    attributes:
+      label: Muster (pattern)
+      options:
+        - (nicht angegeben)
+        - marble
+        - sparkle
+
+  - type: dropdown
+    id: fill
+    attributes:
+      label: Füllstoff (fill)
+      options:
+        - (nicht angegeben)
+        - glass fiber
+        - carbon fiber
+        - wood
+
+  - type: dropdown
+    id: translucent
+    attributes:
+      label: Durchscheinend (translucent)?
+      options:
+        - (nicht angegeben)
+        - "true"
+        - "false"
+
+  - type: dropdown
+    id: glow
+    attributes:
+      label: Nachleuchtend (glow)?
+      options:
+        - (nicht angegeben)
+        - "true"
+        - "false"

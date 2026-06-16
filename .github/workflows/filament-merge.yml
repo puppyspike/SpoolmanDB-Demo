@@ -1,0 +1,92 @@
+name: Filament übernehmen
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  merge:
+    # Läuft nur, wenn das Label "approved" vergeben wird.
+    # Labels können nur Personen mit Schreibrechten setzen -> das ist das Freigabe-Gate.
+    if: github.event.label.name == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install -r scripts/requirements.txt
+
+      - name: Issue-Formular parsen
+        id: parse
+        uses: stefanbuck/github-issue-parser@v3
+        with:
+          template-path: .github/ISSUE_TEMPLATE/filament.yml
+
+      - name: Geparste Daten in Datei schreiben
+        env:
+          ISSUE_JSON: ${{ steps.parse.outputs.jsonString }}
+        run: printf '%s' "$ISSUE_JSON" > issue.json
+
+      - name: Eintrag schreiben (mit Schema-Validierung)
+        id: write
+        run: |
+          set +e
+          python scripts/issue_to_filament.py issue.json > result.txt 2>&1
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+          cat result.txt
+
+      - name: Bei Fehler abbrechen und kommentieren
+        if: steps.write.outputs.rc != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue edit "$NUM" --add-label "invalid" --remove-label "approved" || true
+          {
+            echo "❌ **Übernahme abgebrochen** – Validierung fehlgeschlagen:"
+            echo ""
+            echo '```'
+            cat result.txt
+            echo '```'
+          } > comment.md
+          gh issue comment "$NUM" --body-file comment.md
+          exit 1
+
+      - name: Commit & Push
+        if: steps.write.outputs.rc == '0'
+        env:
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add filaments/
+          if git diff --staged --quiet; then
+            echo "Keine Änderungen."
+          else
+            git commit -m "Filament aus #${NUM} hinzufügen"
+            git push
+          fi
+
+      - name: Issue schließen + bestätigen
+        if: steps.write.outputs.rc == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          {
+            echo "✅ **Übernommen und committet.** Danke!"
+            echo ""
+            echo '```'
+            cat result.txt
+            echo '```'
+          } > comment.md
+          gh issue comment "$NUM" --body-file comment.md
+          gh issue close "$NUM" || true
