@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Filament erfassen · SpoolmanDB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --graphite: #1c1f24;
+    --graphite-2: #262b32;
+    --field: #eceff1;
+    --field-line: #cfd6da;
+    --surface: #ffffff;
+    --page: #e4e8ea;
+    --ink: #16181c;
+    --muted: #5f6b72;
+    --teal: #0e7c7b;
+    --teal-deep: #0a5b5a;
+    --amber: #d98a12;
+    --red: #c0392b;
+    --radius: 7px;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Header ---------- */
+  .masthead {
+    background: var(--graphite);
+    color: #f3f5f6;
+    padding: 28px 24px 30px;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 7px);
+  }
+  .masthead-inner { max-width: 1080px; margin: 0 auto; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #7fd3cf;
+    margin: 0 0 10px;
+  }
+  .masthead h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 44px);
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+  }
+  .masthead p { margin: 0; color: #aeb7bd; max-width: 58ch; font-size: 15px; }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 24px 120px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .wrap { grid-template-columns: 1fr; padding-bottom: 96px; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--field-line);
+    border-radius: var(--radius);
+    padding: 22px 22px 26px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal-deep);
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--field-line);
+  }
+  .section-sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  .card + .card { margin-top: 22px; }
+
+  /* ---------- Fields ---------- */
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .field label .req { color: var(--teal); margin-left: 3px; }
+  .field .hint { margin: 0 0 7px; font-size: 12.5px; color: var(--muted); }
+  .field .hint code {
+    font-family: var(--mono);
+    background: var(--field);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--field-line);
+    border-radius: 6px;
+    padding: 9px 11px;
+    transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.55; }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--teal);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(14,124,123,0.16);
+  }
+  input[aria-invalid="true"], textarea[aria-invalid="true"] {
+    border-color: var(--red);
+    background: #fdf3f1;
+  }
+  input[aria-invalid="true"]:focus, textarea[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.14);
+  }
+  .err {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--red);
+    font-family: var(--mono);
+    min-height: 0;
+    display: none;
+  }
+  .err.show { display: block; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .ghost-btn {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    border: 1px solid var(--field-line);
+    background: #fff;
+    color: var(--ink);
+    padding: 7px 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .ghost-btn:hover { border-color: var(--teal); color: var(--teal-deep); }
+
+  /* ---------- Rail ---------- */
+  .rail { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 18px; }
+  @media (max-width: 880px) { .rail { position: static; } }
+
+  .preview-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  /* signature: filament spool chips */
+  .spools { display: flex; flex-direction: column; gap: 9px; }
+  .spool {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 7px 9px;
+    border: 1px solid var(--field-line);
+    border-radius: 6px;
+    background: var(--field);
+  }
+  .spool-disc {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12);
+  }
+  .spool-disc::after {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+  }
+  .spool-meta { min-width: 0; }
+  .spool-name {
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .spool-hex { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .preview-empty { color: var(--muted); font-size: 13px; font-family: var(--mono); }
+
+  pre.json {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    background: var(--graphite);
+    color: #d7e0e3;
+    border-radius: 6px;
+    padding: 14px;
+    overflow-x: auto;
+    max-height: 320px;
+  }
+  pre.json .k { color: #7fd3cf; }
+  pre.json .s { color: #e6c07b; }
+  pre.json .n { color: #c8a3ff; }
+  pre.json .b { color: #ff9e80; }
+
+  /* ---------- Action bar ---------- */
+  .actionbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: rgba(28,31,36,0.97);
+    border-top: 1px solid #000;
+    padding: 12px 24px;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+  }
+  .actionbar-inner {
+    max-width: 1080px; margin: 0 auto;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .status {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #aeb7bd;
+    flex: 1;
+    min-width: 180px;
+  }
+  .status.ok { color: #7fd3cf; }
+  .status.bad { color: #ffab91; }
+  .cta {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    color: #fff;
+    background: var(--teal);
+    padding: 11px 20px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.14s, transform 0.06s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .cta:hover { background: var(--teal-deep); }
+  .cta:active { transform: translateY(1px); }
+  .cta[aria-disabled="true"] {
+    background: #3a4047; color: #8a949b; cursor: not-allowed; pointer-events: none;
+  }
+  .copy-btn {
+    font-family: var(--mono); font-size: 12.5px;
+    background: transparent; color: #d7e0e3;
+    border: 1px solid #444b52; border-radius: 7px;
+    padding: 11px 14px; cursor: pointer;
+  }
+  .copy-btn:hover { border-color: #7fd3cf; color: #fff; }
+
+  /* repo setting */
+  .repo-bar {
+    max-width: 1080px; margin: 0 auto; padding: 14px 24px 0;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .repo-bar label { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .repo-bar input {
+    width: auto; flex: 1; min-width: 220px; max-width: 340px;
+    background: #fff; padding: 6px 10px; font-size: 12.5px;
+  }
+  a.inline { color: var(--teal-deep); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <p class="eyebrow">SpoolmanDB · Beitrag</p>
+      <h1>Filament erfassen</h1>
+      <p>Daten ausfüllen, im Browser prüfen lassen, dann mit einem Klick ein fertig
+         vorausgefülltes GitHub-Issue öffnen. Validierung läuft live – inklusive Hex-Codes,
+         Material-Format und Pflichtfeldern.</p>
+    </div>
+  </header>
+
+  <div class="repo-bar">
+    <label for="repo">Ziel-Repository</label>
+    <input type="text" id="repo" spellcheck="false" />
+    <span style="font-size:12px;color:var(--muted)">— auf deinen Fork zeigen lassen</span>
+  </div>
+
+  <main class="wrap">
+    <div>
+      <!-- Pflichtangaben -->
+      <section class="card">
+        <p class="section-label">Pflichtangaben</p>
+        <p class="section-sub">Diese Felder verlangt das Datenbank-Schema.</p>
+
+        <div class="field">
+          <label for="manufacturer">Hersteller <span class="req">*</span></label>
+          <p class="hint">Existiert die Hersteller-Datei schon, wird der Eintrag dort ergänzt.</p>
+          <input type="text" id="manufacturer" placeholder="Prusament" spellcheck="false" />
+          <p class="err" id="err-manufacturer"></p>
+        </div>
+
+        <div class="field">
+          <label for="name">Produktname <span class="req">*</span></label>
+          <p class="hint">Muss den Platzhalter <code>{color_name}</code> enthalten.</p>
+          <input type="text" id="name" value="{color_name}" spellcheck="false" />
+          <p class="err" id="err-name"></p>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="material">Material <span class="req">*</span></label>
+            <p class="hint">Großbuchstaben, z. B. <code>PLA</code>, <code>PETG</code>, <code>PLA-CF</code>.</p>
+            <input type="text" id="material" placeholder="PLA" spellcheck="false" />
+            <p class="err" id="err-material"></p>
+          </div>
+          <div class="field">
+            <label for="density">Dichte (g/cm³) <span class="req">*</span></label>
+            <p class="hint">Zahl &gt; 0.</p>
+            <input type="text" id="density" placeholder="1.24" spellcheck="false" inputmode="decimal" />
+            <p class="err" id="err-density"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="diameters">Durchmesser (mm) <span class="req">*</span></label>
+          <p class="hint">Mehrere mit Komma, z. B. <code>1.75, 2.85</code>.</p>
+          <input type="text" id="diameters" placeholder="1.75" spellcheck="false" />
+          <p class="err" id="err-diameters"></p>
+        </div>
+
+        <div class="field">
+          <label for="weights">Gewichte <span class="req">*</span></label>
+          <p class="hint">Eine Zeile pro Variante: <code>Gewicht, Spulengewicht, Spulentyp</code>.
+             Die letzten zwei sind optional (Typ: plastic / cardboard / metal).</p>
+          <textarea id="weights" placeholder="1000, 196, plastic&#10;2000, 220, plastic"></textarea>
+          <p class="err" id="err-weights"></p>
+        </div>
+
+        <div class="field">
+          <label for="colors">Farben <span class="req">*</span></label>
+          <p class="hint">Eine Zeile pro Farbe: <code>Name, Hexcode</code>.
+             Mehrfarbig: mehrere Hex mit Leerzeichen, z. B. <code>Rainbow, FF0000 00FF00 0000FF</code>.</p>
+          <textarea id="colors" placeholder="Galaxy Black, 1A1A1A&#10;Lipstick Red, C0392B"></textarea>
+          <p class="err" id="err-colors"></p>
+          <div class="row-actions">
+            <button type="button" class="ghost-btn" id="btn-example">Beispiel laden</button>
+            <button type="button" class="ghost-btn" id="btn-reset">Zurücksetzen</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Optional -->
+      <section class="card">
+        <p class="section-label">Optional</p>
+        <p class="section-sub">Nur ausfüllen, wenn vom Hersteller angegeben.</p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="extruder_temp">Düsentemperatur (°C)</label>
+            <input type="text" id="extruder_temp" placeholder="215" spellcheck="false" inputmode="numeric" />
+            <p class="err" id="err-extruder_temp"></p>
+          </div>
+          <div class="field">
+            <label for="extruder_temp_range">Düsen-Bereich (°C)</label>
+            <p class="hint">Zwei Werte: <code>205, 225</code>.</p>
+            <input type="text" id="extruder_temp_range" placeholder="205, 225" spellcheck="false" />
+            <p class="err" id="err-extruder_temp_range"></p>
+          </div>
+          <div class="field">
+            <label for="bed_temp">Betttemperatur (°C)</label>
+            <input type="text" id="bed_temp" placeholder="60" spellcheck="false" inputmode="numeric" />
+            <p class="err" id="err-bed_temp"></p>
+          </div>
+          <div class="field">
+            <label for="bed_temp_range">Bett-Bereich (°C)</label>
+            <p class="hint">Zwei Werte: <code>55, 65</code>.</p>
+            <input type="text" id="bed_temp_range" placeholder="55, 65" spellcheck="false" />
+            <p class="err" id="err-bed_temp_range"></p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="finish">Oberfläche</label>
+            <select id="finish">
+              <option value="">(nicht angegeben)</option>
+              <option value="matte">matte</option>
+              <option value="glossy">glossy</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pattern">Muster</label>
+            <select id="pattern">
+              <option value="">(nicht angegeben)</option>
+              <option value="marble">marble</option>
+              <option value="sparkle">sparkle</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fill">Füllstoff</label>
+            <select id="fill">
+              <option value="">(nicht angegeben)</option>
+              <option value="glass fiber">glass fiber</option>
+              <option value="carbon fiber">carbon fiber</option>
+              <option value="wood">wood</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="translucent">Durchscheinend</label>
+            <select id="translucent">
+              <option value="">(nicht angegeben)</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="glow">Nachleuchtend</label>
+            <select id="glow">
+              <option value="">(nicht angegeben)</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Rail -->
+    <aside class="rail">
+      <section class="card">
+        <p class="preview-title">Farbvorschau</p>
+        <div class="spools" id="spools">
+          <p class="preview-empty" id="spools-empty">Farben erscheinen hier …</p>
+        </div>
+      </section>
+      <section class="card">
+        <p class="preview-title">JSON-Eintrag</p>
+        <pre class="json" id="json">{ }</pre>
+      </section>
+    </aside>
+  </main>
+
+  <div class="actionbar">
+    <div class="actionbar-inner">
+      <span class="status" id="status">Pflichtfelder ausfüllen …</span>
+      <button class="copy-btn" id="copy">Link kopieren</button>
+      <a class="cta" id="cta" aria-disabled="true" href="#" target="_blank" rel="noopener">
+        Issue auf GitHub öffnen →
+      </a>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DEFAULT_REPO = "Donkie/SpoolmanDB"; // <- ggf. auf deinen Fork ändern
+  var TEMPLATE = "filament.yml";
+
+  var params = new URLSearchParams(location.search);
+  var repoInput = document.getElementById("repo");
+  repoInput.value = params.get("repo") || DEFAULT_REPO;
+
+  var MATERIAL_RE = /^[A-Z0-9]+(\+[A-Z0-9]+)*(-(CF\d{0,2}|GF\d{0,2}|\d{2}[AD]))?\+?$/;
+  var HEX_RE = /^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/;
+  var SPOOL_TYPES = ["plastic", "cardboard", "metal"];
+
+  var ids = ["manufacturer","name","material","density","diameters","weights","colors",
+             "extruder_temp","extruder_temp_range","bed_temp","bed_temp_range",
+             "finish","pattern","fill","translucent","glow"];
+  var el = {};
+  ids.forEach(function (id) { el[id] = document.getElementById(id); });
+
+  function val(id) { return (el[id].value || "").trim(); }
+  function num(s) { return parseFloat(String(s).replace(",", ".")); }
+
+  function setErr(id, msg) {
+    var box = document.getElementById("err-" + id);
+    var input = el[id];
+    if (msg) {
+      if (box) { box.textContent = msg; box.classList.add("show"); }
+      if (input && input.tagName !== "SELECT") input.setAttribute("aria-invalid", "true");
+    } else {
+      if (box) { box.textContent = ""; box.classList.remove("show"); }
+      if (input) input.removeAttribute("aria-invalid");
+    }
+  }
+
+  // ---- Parser (spiegeln das Python-Skript) ----
+  function parseDiameters(s) {
+    var out = [], bad = false;
+    s.split(/[,\s]+/).forEach(function (t) {
+      if (!t) return;
+      var n = num(t);
+      if (isNaN(n) || n <= 0) bad = true; else out.push(n);
+    });
+    return { value: out, bad: bad };
+  }
+
+  function parseWeights(s) {
+    var out = [], err = null;
+    s.split(/\r?\n/).forEach(function (line) {
+      line = line.replace(/^[-*]\s*/, "").trim();
+      if (!line) return;
+      var p = line.split(",").map(function (x) { return x.trim(); });
+      var w = num(p[0]);
+      if (isNaN(w) || w < 0) { err = err || ("Ungültiges Gewicht: „" + line + "“"); return; }
+      var obj = { weight: w };
+      if (p[1]) {
+        var sw = num(p[1]);
+        if (isNaN(sw) || sw < 0) { err = err || ("Ungültiges Spulengewicht: „" + line + "“"); return; }
+        obj.spool_weight = sw;
+      }
+      if (p[2]) {
+        var st = p[2].toLowerCase();
+        if (SPOOL_TYPES.indexOf(st) === -1) { err = err || ("Spulentyp „" + p[2] + "“ – erlaubt: plastic, cardboard, metal"); return; }
+        obj.spool_type = st;
+      }
+      out.push(obj);
+    });
+    return { value: out, err: err };
+  }
+
+  function parseColors(s) {
+    var out = [], err = null;
+    s.split(/\r?\n/).forEach(function (line) {
+      line = line.replace(/^[-*]\s*/, "").trim();
+      if (!line) return;
+      var ci = line.indexOf(",");
+      if (ci === -1) { err = err || ("Zeile „" + line + "“ braucht Name, Hex"); return; }
+      var name = line.slice(0, ci).trim();
+      var hexes = line.slice(ci + 1).split(/\s+/)
+        .map(function (h) { return h.replace(/^#/, "").trim(); })
+        .filter(Boolean);
+      if (!name) { err = err || ("Name fehlt: „" + line + "“"); return; }
+      if (!hexes.length) { err = err || ("Hex fehlt für „" + name + "“"); return; }
+      var badHex = hexes.filter(function (h) { return !HEX_RE.test(h); });
+      if (badHex.length) { err = err || ("Ungültiger Hex-Code: " + badHex.join(", ")); return; }
+      out.push(hexes.length === 1 ? { name: name, hex: hexes[0] } : { name: name, hexes: hexes });
+    });
+    return { value: out, err: err };
+  }
+
+  function parseIntRange(s) {
+    var parts = s.split(/[,\s/]+/).filter(Boolean);
+    if (parts.length !== 2) return { err: "Bitte genau zwei Werte." };
+    var a = num(parts[0]), b = num(parts[1]);
+    if (isNaN(a) || isNaN(b) || a % 1 !== 0 || b % 1 !== 0) return { err: "Ganze Zahlen erwartet." };
+    return { value: [a, b] };
+  }
+
+  // ---- Build + validate ----
+  function build() {
+    var ok = true;
+    function fail(id, msg) { setErr(id, msg); ok = false; }
+
+    // manufacturer
+    var manu = val("manufacturer");
+    if (!manu) fail("manufacturer", "Pflichtfeld."); else setErr("manufacturer", null);
+
+    var fil = {};
+
+    // name
+    var name = val("name") || "{color_name}";
+    if (name.indexOf("{") === -1) fail("name", "Muss {color_name} enthalten.");
+    else setErr("name", null);
+    fil.name = name;
+
+    // material
+    var mat = val("material").toUpperCase();
+    if (!mat) fail("material", "Pflichtfeld.");
+    else if (!MATERIAL_RE.test(mat)) fail("material", "Ungültiges Format (z. B. PLA, PETG, PLA-CF).");
+    else setErr("material", null);
+    fil.material = mat;
+
+    // density
+    var dens = num(val("density"));
+    if (val("density") === "") fail("density", "Pflichtfeld.");
+    else if (isNaN(dens) || dens <= 0) fail("density", "Zahl > 0 erwartet.");
+    else setErr("density", null);
+    fil.density = isNaN(dens) ? null : dens;
+
+    // weights
+    if (!val("weights")) { fail("weights", "Mindestens eine Zeile."); fil.weights = []; }
+    else {
+      var w = parseWeights(val("weights"));
+      if (w.err) fail("weights", w.err);
+      else if (!w.value.length) fail("weights", "Mindestens eine Zeile.");
+      else setErr("weights", null);
+      fil.weights = w.value;
+    }
+
+    // diameters
+    if (!val("diameters")) { fail("diameters", "Pflichtfeld."); fil.diameters = []; }
+    else {
+      var d = parseDiameters(val("diameters"));
+      if (d.bad) fail("diameters", "Nur Zahlen > 0.");
+      else if (!d.value.length) fail("diameters", "Pflichtfeld.");
+      else setErr("diameters", null);
+      fil.diameters = d.value;
+    }
+
+    // colors
+    if (!val("colors")) { fail("colors", "Mindestens eine Farbe."); fil.colors = []; }
+    else {
+      var c = parseColors(val("colors"));
+      if (c.err) fail("colors", c.err);
+      else if (!c.value.length) fail("colors", "Mindestens eine Farbe.");
+      else setErr("colors", null);
+      fil.colors = c.value;
+    }
+
+    // optional ints
+    ["extruder_temp", "bed_temp"].forEach(function (id) {
+      var s = val(id);
+      if (!s) { setErr(id, null); return; }
+      var n = num(s);
+      if (isNaN(n) || n % 1 !== 0) fail(id, "Ganze Zahl erwartet.");
+      else { setErr(id, null); fil[id] = n; }
+    });
+
+    // optional ranges
+    ["extruder_temp_range", "bed_temp_range"].forEach(function (id) {
+      var s = val(id);
+      if (!s) { setErr(id, null); return; }
+      var r = parseIntRange(s);
+      if (r.err) fail(id, r.err);
+      else { setErr(id, null); fil[id] = r.value; }
+    });
+
+    // optional enums / bools
+    ["finish", "pattern", "fill"].forEach(function (id) {
+      if (val(id)) fil[id] = val(id);
+    });
+    ["translucent", "glow"].forEach(function (id) {
+      if (val(id)) fil[id] = val(id) === "true";
+    });
+
+    // ordered object to match the writer
+    var ordered = {};
+    ["name", "material", "density", "weights", "diameters", "colors",
+     "extruder_temp", "bed_temp", "extruder_temp_range", "bed_temp_range",
+     "finish", "pattern", "fill", "translucent", "glow"].forEach(function (k) {
+      if (fil[k] !== undefined && fil[k] !== null) ordered[k] = fil[k];
+    });
+
+    return { ok: ok, manufacturer: manu, filament: ordered };
+  }
+
+  // ---- Rendering ----
+  function discStyle(color) {
+    if (color.hex) return "background:#" + color.hex + ";";
+    var stops = color.hexes.map(function (h) { return "#" + h; }).join(", ");
+    return "background: conic-gradient(" + stops + ");";
+  }
+
+  function renderSpools(colors) {
+    var box = document.getElementById("spools");
+    if (!colors.length) {
+      box.innerHTML = '<p class="preview-empty">Farben erscheinen hier …</p>';
+      return;
+    }
+    box.innerHTML = colors.map(function (c) {
+      var label = c.hex ? ("#" + c.hex) : c.hexes.map(function (h) { return "#" + h; }).join(" · ");
+      return '<div class="spool"><div class="spool-disc" style="' + discStyle(c) + '"></div>' +
+             '<div class="spool-meta"><div class="spool-name"></div>' +
+             '<div class="spool-hex"></div></div></div>';
+    }).join("");
+    // set text safely (avoid HTML injection from names)
+    var nodes = box.querySelectorAll(".spool");
+    colors.forEach(function (c, i) {
+      nodes[i].querySelector(".spool-name").textContent = c.name;
+      nodes[i].querySelector(".spool-hex").textContent =
+        c.hex ? ("#" + c.hex) : c.hexes.map(function (h) { return "#" + h; }).join(" · ");
+    });
+  }
+
+  function highlightJson(obj) {
+    var json = JSON.stringify(obj, null, 2);
+    json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    json = json.replace(/"([^"]+)":/g, '"<span class="k">$1</span>":');
+    json = json.replace(/: "([^"]*)"/g, ': "<span class="s">$1</span>"');
+    json = json.replace(/: (-?\d+\.?\d*)/g, ': <span class="n">$1</span>');
+    json = json.replace(/: (true|false)/g, ': <span class="b">$1</span>');
+    return json;
+  }
+
+  // ---- Prefill URL (raw form text -> issue template fields) ----
+  function buildUrl(repo) {
+    var qs = ["template=" + encodeURIComponent(TEMPLATE)];
+    function add(id, value) {
+      if (value) qs.push(id + "=" + encodeURIComponent(value));
+    }
+    add("manufacturer", val("manufacturer"));
+    add("name", val("name") || "{color_name}");
+    add("material", val("material").toUpperCase());
+    add("density", val("density"));
+    add("diameters", val("diameters"));
+    add("weights", val("weights"));
+    add("colors", val("colors"));
+    add("extruder_temp", val("extruder_temp"));
+    add("extruder_temp_range", val("extruder_temp_range"));
+    add("bed_temp", val("bed_temp"));
+    add("bed_temp_range", val("bed_temp_range"));
+    add("finish", val("finish"));
+    add("pattern", val("pattern"));
+    add("fill", val("fill"));
+    add("translucent", val("translucent"));
+    add("glow", val("glow"));
+    return "https://github.com/" + repo + "/issues/new?" + qs.join("&");
+  }
+
+  var statusEl = document.getElementById("status");
+  var cta = document.getElementById("cta");
+  var jsonEl = document.getElementById("json");
+
+  function update() {
+    var res = build();
+    renderSpools(res.filament.colors || []);
+    var preview = { manufacturer: res.manufacturer || "…", filaments: [res.filament] };
+    jsonEl.innerHTML = highlightJson(preview);
+
+    var repo = (repoInput.value.trim() || DEFAULT_REPO).replace(/^\/+|\/+$/g, "");
+    var url = buildUrl(repo);
+
+    if (res.ok && res.manufacturer) {
+      cta.href = url;
+      cta.setAttribute("aria-disabled", "false");
+      statusEl.textContent = "Bereit · gültig";
+      statusEl.className = "status ok";
+      if (url.length > 7000) {
+        statusEl.textContent = "Gültig, aber Link sehr lang – ggf. Farben aufteilen.";
+        statusEl.className = "status bad";
+      }
+    } else {
+      cta.removeAttribute("href");
+      cta.setAttribute("aria-disabled", "true");
+      statusEl.textContent = "Pflichtfelder prüfen …";
+      statusEl.className = "status bad";
+    }
+  }
+
+  // copy
+  document.getElementById("copy").addEventListener("click", function () {
+    if (cta.getAttribute("aria-disabled") === "true") return;
+    navigator.clipboard.writeText(cta.href).then(function () {
+      var b = document.getElementById("copy");
+      var t = b.textContent; b.textContent = "Kopiert ✓";
+      setTimeout(function () { b.textContent = t; }, 1400);
+    });
+  });
+
+  // example / reset
+  document.getElementById("btn-example").addEventListener("click", function () {
+    el.manufacturer.value = "Prusament";
+    el.name.value = "{color_name}";
+    el.material.value = "PLA";
+    el.density.value = "1.24";
+    el.diameters.value = "1.75, 2.85";
+    el.weights.value = "1000, 196, plastic\n2000, 220, plastic";
+    el.colors.value = "Galaxy Black, 1A1A1A\nLipstick Red, C0392B\nRainbow, FF0000 00FF00 0000FF";
+    el.extruder_temp.value = "215";
+    el.extruder_temp_range.value = "205, 225";
+    el.bed_temp.value = "60";
+    update();
+  });
+  document.getElementById("btn-reset").addEventListener("click", function () {
+    ids.forEach(function (id) {
+      if (el[id].tagName === "SELECT") el[id].selectedIndex = 0;
+      else el[id].value = (id === "name") ? "{color_name}" : "";
+    });
+    ids.forEach(function (id) { setErr(id, null); });
+    update();
+  });
+
+  ids.forEach(function (id) {
+    el[id].addEventListener("input", update);
+    el[id].addEventListener("change", update);
+  });
+  repoInput.addEventListener("input", update);
+
+  update();
+})();
+</script>
+</body>
+</html>
